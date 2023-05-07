@@ -20,3 +20,9 @@ type User struct {
 func (User) SoftDelete() bool {
 	return true
 }
+
+func (u *User) Create() bool {
+	err := db.Create(&u).Error
+
+	return err == nil
+}
