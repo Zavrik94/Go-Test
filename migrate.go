@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"go-test/database"
 	"go-test/database/models"
+	"go-test/database/seeders"
 	_ "gorm.io/driver/mysql"
+	"os"
 )
 
 func main() {
@@ -14,19 +15,24 @@ func main() {
 		&models.User{},
 		&models.Role{},
 		&models.Car{},
+		&models.Token{},
 	)
 
-	var roles []models.Role
+	seed()
 
-	db.Raw("SELECT * FROM roles").Scan(&roles)
-
-	for _, role := range roles {
-		fmt.Printf("%s", role.Name)
+	if len(os.Args) > 1 {
+		if os.Args[1] == "--seed" {
+			seedTestData()
+		}
 	}
 
-	seed()
 }
 
 func seed() {
 	models.CreateRoles()
+}
+
+func seedTestData() {
+	seeders.SeedUsers()
+	seeders.SeedCars()
 }

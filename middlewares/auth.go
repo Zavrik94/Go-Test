@@ -44,6 +44,12 @@ func AuthMiddleware() gin.HandlerFunc {
 			var user models.User
 			db.Preload("Role").Where("id = ?", userID).First(&user)
 
+			fmt.Printf("UserID: %d\n", user.ID)
+			if !models.CheckToken(user.ID) {
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
+
 			// Add the user ID to the request context
 			c.Set("userID", user.ID)
 

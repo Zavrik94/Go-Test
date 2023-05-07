@@ -7,7 +7,6 @@ import (
 
 func main() {
 	r := gin.Default()
-	routes.RegisterAPIRoutes(r)
 	routes.RegisterAuthRoutes(r)
 	routes.RegisterCarsRoutes(r)
 	r.Run() // listen and serve on 0.0.0.0:8080
