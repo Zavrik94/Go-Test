@@ -36,3 +36,27 @@ func (c *Car) Delete() bool {
 
 	return err == nil
 }
+
+func (c *Car) FindByID(id int, relations ...string) {
+	query := db.Model(Car{}).Where("id = ?", id)
+
+	for _, relation := range relations {
+		query = query.Preload(relation)
+	}
+
+	query.First(&c)
+}
+
+func FindAllCars(conditions []string, parameters ...interface{}) []Car {
+	var cars []Car
+
+	query := db.Model(Car{})
+
+	for i, condition := range conditions {
+		query = query.Where(condition, parameters[i])
+	}
+
+	query.Find(&cars)
+
+	return cars
+}

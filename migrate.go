@@ -1,30 +1,31 @@
 package main
 
 import (
-	"go-test/database"
+	"github.com/joho/godotenv"
 	"go-test/database/models"
 	"go-test/database/seeders"
 	_ "gorm.io/driver/mysql"
-	"os"
 )
 
 func main() {
-	db := database.GetDB()
+	godotenv.Load()
 
-	db.AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.Car{},
-		&models.Token{},
-	)
-
-	seed()
-
-	if len(os.Args) > 1 {
-		if os.Args[1] == "--seed" {
-			seedTestData()
-		}
-	}
+	//db := database.GetDB()
+	//
+	//db.AutoMigrate(
+	//	&models.User{},
+	//	&models.Role{},
+	//	&models.Car{},
+	//	&models.Token{},
+	//)
+	//
+	//seed()
+	//
+	//if len(os.Args) > 1 {
+	//	if os.Args[1] == "--seed" {
+	//		seedTestData()
+	//	}
+	//}
 
 }
 

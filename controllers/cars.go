@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"go-test/database"
 	"go-test/database/models"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -28,7 +28,7 @@ func CreateCar(c *gin.Context) {
 
 func RentCar(c *gin.Context) {
 
-	carId := c.Param("car_id")
+	carId, _ := strconv.Atoi(c.Param("car_id"))
 
 	userID, exist := c.Get("userID")
 
@@ -39,16 +39,20 @@ func RentCar(c *gin.Context) {
 
 	var user models.User
 
-	db := database.GetDB()
+	var car models.Car
 
-	db.Preload("Car").Where("id = ?", userID.(uint)).First(&user)
+	user.FindByID(userID.(int), "Car")
 
 	if user.Car != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Already rent Car"})
 		return
 	}
 
-	db.Model(&models.Car{}).Where("id = ?", carId).Updates(models.Car{UserID: &user.ID})
+	car.FindByID(carId)
+
+	car.UserID = &user.ID
+
+	car.Update()
 }
 
 type CarJSON struct {
@@ -58,11 +62,18 @@ type CarJSON struct {
 }
 
 func RentedCars(c *gin.Context) {
-	db := database.GetDB()
 
-	var cars []models.Car
+	conditions := []string{
+		"date >= ?",
+		"make = ?",
+		"year >= ?",
+	}
 
-	db.Model(&models.Car{}).Where("user_id is not null").Find(&cars)
+	parameters := []interface{}{
+		"not null",
+	}
+
+	cars := models.FindAllCars(conditions, parameters)
 
 	carsJSON := make([]CarJSON, len(cars))
 
@@ -80,17 +91,15 @@ func RentedCars(c *gin.Context) {
 }
 
 func FreeCars(c *gin.Context) {
-	db := database.GetDB()
-
-	var cars []models.Car
-
-	query := db.Model(&models.Car{}).Where("user_id is null")
+	var conditions []string
+	var parameters []interface{}
 
 	startDateStr := c.Query("start_date")
 	if startDateStr != "" {
 		startDate, err := time.Parse("2006-01-02", startDateStr)
 		if err == nil {
-			query = query.Where("date >= ?", startDate)
+			conditions = append(conditions, "date >= ?")
+			parameters = append(parameters, startDate)
 		}
 	}
 
@@ -98,26 +107,33 @@ func FreeCars(c *gin.Context) {
 	if endDateStr != "" {
 		endDate, err := time.Parse("2006-01-02", endDateStr)
 		if err == nil {
-			query = query.Where("date <= ?", endDate)
+			conditions = append(conditions, "date <= ?")
+			parameters = append(parameters, endDate)
 		}
 	}
 
 	model := c.Query("model")
 	if model != "" {
-		query = query.Where("model = ?", model)
+		conditions = append(conditions, "model = ?")
+		parameters = append(parameters, model)
 	}
 
 	manufacturer := c.Query("manufacturer")
 	if manufacturer != "" {
-		query = query.Where("manufacturer = ?", manufacturer)
+		conditions = append(conditions, "manufacturer = ?")
+		parameters = append(parameters, manufacturer)
 	}
 
 	name := c.Query("name")
 	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
+		conditions = append(conditions, "name LIKE ?")
+		parameters = append(parameters, "%"+name+"%")
 	}
 
-	query.Find(&cars)
+	conditions = append(conditions, "user_id is ?")
+	parameters = append(parameters, "null")
+
+	cars := models.FindAllCars(conditions, parameters)
 
 	carsJSON := make([]CarJSON, len(cars))
 	for i, car := range cars {
